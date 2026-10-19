@@ -1,0 +1,37 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-biteme}:${POSTGRES_PASSWORD:-biteme_local_password}@db:5432/${POSTGRES_DB:-biteme}
+      DATABASE_SSL: "false"
+      PORT: 3000
+      COOKIE_SECURE: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    command: sh -c "node scripts/migrate.js && node scripts/seed.js && node src/server.js"
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-biteme}
+      POSTGRES_USER: ${POSTGRES_USER:-biteme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-biteme_local_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biteme} -d ${POSTGRES_DB:-biteme}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres_data:

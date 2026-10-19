@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: bite-me-web
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    preDeployCommand: node scripts/migrate.js && node scripts/seed.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bite-me-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "false"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: Administración Bite Me
+      - key: SHIPPING_FLAT_PEN
+        value: "8.00"
+      - key: FREE_SHIPPING_FROM_PEN
+        value: "100.00"
+databases:
+  - name: bite-me-db
+    plan: basic-256mb
+    databaseName: biteme
+    user: biteme
